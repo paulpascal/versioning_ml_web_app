@@ -16,11 +16,15 @@ pipeline {
         
         stage('Setup') {
             steps {
-                // Create and activate virtual environment
+                // Clean up any existing virtual environment first
+                sh 'rm -rf ${VENV_PATH}'
+                
+                // Create and activate virtual environment with proper error handling
                 sh '''
-                    python -m venv ${VENV_PATH}
+                    python3 -m venv ${VENV_PATH} || python -m venv ${VENV_PATH}
                     . ${VENV_PATH}/bin/activate
-                    python -m pip install -r requirements.txt
+                    pip install --upgrade pip
+                    pip install -r requirements.txt
                 '''
             }
         }
