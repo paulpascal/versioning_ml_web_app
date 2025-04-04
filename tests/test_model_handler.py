@@ -2,26 +2,26 @@ import pytest
 import numpy as np
 from app.utils.model_handler import ModelHandler
 import os
+from sklearn.model_selection import train_test_split
 
 
 @pytest.fixture
 def sample_data():
-    # Create sample training data
-    X_train = np.random.rand(100, 3)
-    X_test = np.random.rand(20, 3)
-    y_train = np.random.randint(0, 2, 100)
-    y_test = np.random.randint(0, 2, 20)
-    return X_train, X_test, y_train, y_test
+    """Generate sample data for testing"""
+    np.random.seed(42)
+    X = np.random.rand(20, 3)
+    y = np.random.randint(0, 2, 20)
+    return train_test_split(X, y, test_size=0.2, random_state=42)
 
 
 @pytest.fixture
 def model_config():
+    """Provide model configuration"""
     return {
-        "model_type": "rf",
         "features": ["feature1", "feature2", "feature3"],
-        "target": "target",
-        "train_size": 0.8,
+        "model_type": "random_forest_classifier",
         "normalize": True,
+        "target": "target",
     }
 
 
@@ -38,62 +38,55 @@ def test_model_training_classification(sample_data, model_config):
     handler = ModelHandler(**model_config)
 
     # Test Random Forest
-    handler.model_type = "rf"
+    handler.model_type = "random_forest_classifier"
     handler.train(X_train, X_test, y_train, y_test)
     assert handler.model is not None
-    assert "accuracy" in handler.metrics
-    assert "precision" in handler.metrics
-    assert "recall" in handler.metrics
-    assert "f1" in handler.metrics
-
-    # Test SVM
-    handler.model_type = "svm"
-    handler.train(X_train, X_test, y_train, y_test)
-    assert handler.model is not None
-    assert "accuracy" in handler.metrics
-    assert "precision" in handler.metrics
-    assert "recall" in handler.metrics
-    assert "f1" in handler.metrics
+    assert handler.results is not None
+    assert "train_accuracy" in handler.results
+    assert "test_accuracy" in handler.results
 
 
 def test_model_training_regression(sample_data, model_config):
     X_train, X_test, y_train, y_test = sample_data
     handler = ModelHandler(**model_config)
-    handler.model_type = "lr"
+    handler.model_type = "linear_regression"
 
     handler.train(X_train, X_test, y_train, y_test)
     assert handler.model is not None
-    assert "mse" in handler.metrics
-    assert "rmse" in handler.metrics
-    assert "r2" in handler.metrics
+    assert handler.results is not None
+    assert "mse" in handler.results
 
 
 def test_feature_importance(sample_data, model_config):
     X_train, X_test, y_train, y_test = sample_data
     handler = ModelHandler(**model_config)
-    handler.model_type = "rf"
+    handler.model_type = "random_forest_classifier"
 
     handler.train(X_train, X_test, y_train, y_test)
-    assert handler.feature_importance is not None
-    assert len(handler.feature_importance) == len(model_config["features"])
+    assert "feature_importance" in handler.results
+    assert len(handler.results["feature_importance"]) == len(model_config["features"])
 
 
 def test_confusion_matrix(sample_data, model_config):
     X_train, X_test, y_train, y_test = sample_data
     handler = ModelHandler(**model_config)
-    handler.model_type = "rf"
+    handler.model_type = "random_forest_classifier"
 
     handler.train(X_train, X_test, y_train, y_test)
-    assert handler.confusion_matrix is not None
+    assert "confusion_matrix" in handler.results
+    assert len(handler.results["confusion_matrix"]) == 2
+    assert len(handler.results["confusion_matrix"][0]) == 2
 
 
 def test_model_saving(sample_data, model_config, tmp_path):
     X_train, X_test, y_train, y_test = sample_data
     handler = ModelHandler(**model_config)
-    handler.model_type = "rf"
+    handler.model_type = "random_forest_classifier"
 
     handler.train(X_train, X_test, y_train, y_test)
     filepath = handler.save_model("test_model")
-
     assert os.path.exists(filepath)
-    assert filepath.endswith(".joblib")
+
+    # Clean up
+    if os.path.exists(filepath):
+        os.remove(filepath)

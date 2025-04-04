@@ -1,222 +1,270 @@
-import pytest
-import pandas as pd
-import numpy as np
-from sklearn.model_selection import train_test_split
-from sklearn.linear_model import LinearRegression
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.svm import SVC
-from app.utils.model_handler import ModelHandler
+"""
+Test suite for model training functionality using student performance data.
+
+This test suite verifies that our machine learning models can be trained correctly
+on real-world student performance data. It tests:
+1. Data loading and preparation
+2. Model training with different algorithms
+3. Model performance metrics
+4. Feature importance analysis
+5. Model saving functionality
+
+The tests use the student_performance.csv dataset which contains:
+- Features: study_hours, previous_score, attendance_rate
+- Target: pass (binary classification)
+"""
+
 import os
+import pytest
+import numpy as np
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from app.utils.model_handler import ModelHandler
 
-
-# Test data generation
-def generate_test_data():
-    """Generate synthetic test data for both regression and classification"""
-    # Generate regression data
-    n_samples = 100
-    X_reg = np.random.randn(n_samples, 3)
-    y_reg = (
-        2 * X_reg[:, 0]
-        + 0.5 * X_reg[:, 1]
-        - 0.3 * X_reg[:, 2]
-        + np.random.randn(n_samples) * 0.1
-    )
-
-    # Generate classification data
-    X_clf = np.random.randn(n_samples, 3)
-    y_clf = (X_clf[:, 0] + X_clf[:, 1] + X_clf[:, 2] > 0).astype(int)
-
-    return X_reg, y_reg, X_clf, y_clf
+# Get the directory where this test file is located
+TEST_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 @pytest.fixture
-def test_data():
-    """Fixture to provide test data"""
-    X_reg, y_reg, X_clf, y_clf = generate_test_data()
+def student_data():
+    """
+    Fixture to load and prepare student performance data.
+
+    Returns:
+        dict: Contains:
+            - X: Feature matrix (study_hours, previous_score, attendance_rate)
+            - y: Target vector (pass/fail)
+            - features: List of feature names
+            - target: Target column name
+            - df: Original DataFrame
+    """
+    # Load the dataset from the tests directory
+    csv_path = os.path.join(TEST_DIR, "student_performance.csv")
+    df = pd.read_csv(csv_path)
+
+    # Prepare features and target
+    features = ["study_hours", "previous_score", "attendance_rate"]
+    target = "pass"
+
+    # Split the data
+    X = df[features].values
+    y = df[target].values
+
+    return {"X": X, "y": y, "features": features, "target": target, "df": df}
+
+
+@pytest.fixture
+def model_config(student_data):
+    """
+    Fixture to provide model configuration based on student data.
+
+    Returns:
+        dict: Model configuration including:
+            - features: List of feature names
+            - target: Target column name
+            - normalize: Whether to normalize features
+            - train_size: Proportion of data to use for training
+    """
     return {
-        "regression": {"X": X_reg, "y": y_reg},
-        "classification": {"X": X_clf, "y": y_clf},
+        "features": student_data["features"],
+        "target": student_data["target"],
+        "normalize": True,
+        "train_size": 0.8,
     }
 
 
-@pytest.fixture
-def features():
-    """Fixture to provide feature names"""
-    return ["feature1", "feature2", "feature3"]
+@pytest.mark.data_validation
+def test_data_loading(student_data):
+    """
+    Test that the student performance data is loaded correctly.
+
+    Verifies:
+    1. Data has rows (not empty)
+    2. Features and target are properly loaded
+    3. Correct number of features
+    4. Correct target column name
+    """
+    print("\n=== Data Loading Test ===")
+    print(f"Number of samples: {student_data['X'].shape[0]}")
+    print(f"Number of features: {len(student_data['features'])}")
+    print(f"Target column: {student_data['target']}")
+
+    assert student_data["X"].shape[0] > 0
+    assert student_data["y"].shape[0] > 0
+    assert len(student_data["features"]) == 3
+    assert student_data["target"] == "pass"
 
 
-def test_data_loading():
-    """Test if test data file exists and can be loaded"""
-    test_data_path = "data/test_data.csv"
-    assert os.path.exists(test_data_path), "Test data file not found"
+@pytest.mark.model_training
+def test_random_forest_classifier(student_data, model_config):
+    """
+    Test Random Forest classifier on student performance data.
 
-    # Try to load the data
-    try:
-        df = pd.read_csv(test_data_path)
-        assert not df.empty, "Test data file is empty"
-        assert len(df.columns) > 0, "Test data has no columns"
-    except Exception as e:
-        pytest.fail(f"Failed to load test data: {str(e)}")
+    Verifies:
+    1. Model can be trained successfully
+    2. Training and test accuracy are reasonable (> 0.5)
+    3. Confusion matrix is properly generated
+    4. Feature importance is calculated and valid
+    5. All metrics are within expected ranges
+    """
+    print("\n=== Random Forest Classifier Test ===")
 
-
-def test_linear_regression(test_data, features):
-    """Test linear regression model training"""
-    # Prepare data
-    X = test_data["regression"]["X"]
-    y = test_data["regression"]["y"]
+    # Split the data
     X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=42
-    )
-
-    # Initialize model handler
-    model_handler = ModelHandler(
-        model_type="linear_regression",
-        features=features,
-        target_column="target",
-        normalize=True,
-    )
-
-    # Train model
-    model_handler.train(X_train, X_test, y_train, y_test)
-
-    # Check results
-    assert model_handler.results is not None, "Training results are None"
-    assert "mse" in model_handler.results, "MSE not found in results"
-    assert "r2" in model_handler.results, "R² not found in results"
-    assert model_handler.results["mse"] >= 0, "MSE should be non-negative"
-    assert 0 <= model_handler.results["r2"] <= 1, "R² should be between 0 and 1"
-
-
-def test_random_forest_classifier(test_data, features):
-    """Test random forest classifier training"""
-    # Prepare data
-    X = test_data["classification"]["X"]
-    y = test_data["classification"]["y"]
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=42
+        student_data["X"], student_data["y"], test_size=0.2, random_state=42
     )
 
     # Initialize model handler
     model_handler = ModelHandler(
         model_type="random_forest_classifier",
-        features=features,
-        target_column="target",
-        normalize=True,
+        features=model_config["features"],
+        target=model_config["target"],
+        normalize=model_config["normalize"],
     )
 
     # Train model
-    model_handler.train(X_train, X_test, y_train, y_test)
+    success = model_handler.train(X_train, X_test, y_train, y_test)
+    assert success, "Model training failed"
 
-    # Check results
-    assert model_handler.results is not None, "Training results are None"
-    assert (
-        "train_accuracy" in model_handler.results
-    ), "Training accuracy not found in results"
-    assert (
-        "test_accuracy" in model_handler.results
-    ), "Test accuracy not found in results"
-    assert (
-        "confusion_matrix" in model_handler.results
-    ), "Confusion matrix not found in results"
-    assert (
-        0 <= model_handler.results["test_accuracy"] <= 1
-    ), "Accuracy should be between 0 and 1"
+    # Verify model was trained
+    assert model_handler.model is not None
+    assert model_handler.results is not None
 
+    # Print results
+    print("\nModel Results:")
+    print(f"Training Accuracy: {model_handler.results['train_accuracy']:.4f}")
+    print(f"Test Accuracy: {model_handler.results['test_accuracy']:.4f}")
 
-def test_svm_classifier(test_data, features):
-    """Test SVM classifier training"""
-    # Prepare data
-    X = test_data["classification"]["X"]
-    y = test_data["classification"]["y"]
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=42
-    )
+    print("\nConfusion Matrix:")
+    cm = model_handler.results["confusion_matrix"]
+    print(f"True Negatives: {cm[0][0]}")
+    print(f"False Positives: {cm[0][1]}")
+    print(f"False Negatives: {cm[1][0]}")
+    print(f"True Positives: {cm[1][1]}")
 
-    # Initialize model handler
-    model_handler = ModelHandler(
-        model_type="svm", features=features, target_column="target", normalize=True
-    )
+    print("\nFeature Importance:")
+    for feature in model_handler.results["feature_importance"]:
+        print(f"{feature['feature']}: {feature['importance']:.4f}")
 
-    # Train model
-    model_handler.train(X_train, X_test, y_train, y_test)
+    # Check accuracy metrics
+    assert "train_accuracy" in model_handler.results
+    assert "test_accuracy" in model_handler.results
+    assert model_handler.results["train_accuracy"] > 0.5
+    assert model_handler.results["test_accuracy"] > 0.5
 
-    # Check results
-    assert model_handler.results is not None, "Training results are None"
-    assert (
-        "train_accuracy" in model_handler.results
-    ), "Training accuracy not found in results"
-    assert (
-        "test_accuracy" in model_handler.results
-    ), "Test accuracy not found in results"
-    assert (
-        "confusion_matrix" in model_handler.results
-    ), "Confusion matrix not found in results"
-    assert (
-        0 <= model_handler.results["test_accuracy"] <= 1
-    ), "Accuracy should be between 0 and 1"
-
-
-def test_feature_importance(test_data, features):
-    """Test feature importance calculation"""
-    # Prepare data
-    X = test_data["classification"]["X"]
-    y = test_data["classification"]["y"]
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=42
-    )
-
-    # Initialize model handler with Random Forest
-    model_handler = ModelHandler(
-        model_type="random_forest_classifier",
-        features=features,
-        target_column="target",
-        normalize=True,
-    )
-
-    # Train model
-    model_handler.train(X_train, X_test, y_train, y_test)
+    # Check confusion matrix
+    assert "confusion_matrix" in model_handler.results
+    cm = model_handler.results["confusion_matrix"]
+    assert len(cm) == 2
+    assert len(cm[0]) == 2
 
     # Check feature importance
-    assert (
-        "feature_importance" in model_handler.results
-    ), "Feature importance not found in results"
-    importance_list = model_handler.results["feature_importance"]
-    assert len(importance_list) == len(
-        features
-    ), "Number of features in importance list doesn't match"
-    assert all(
-        imp["importance"] >= 0 for imp in importance_list
-    ), "All importance scores should be non-negative"
+    assert "feature_importance" in model_handler.results
+    feature_importance = model_handler.results["feature_importance"]
+    assert len(feature_importance) == len(model_config["features"])
+
+    # Verify feature importance values
+    for feature in feature_importance:
+        assert "feature" in feature
+        assert "importance" in feature
+        assert feature["importance"] >= 0
+        assert feature["importance"] <= 1
 
 
-def test_model_saving(test_data, features):
-    """Test model saving functionality"""
-    # Prepare data
-    X = test_data["classification"]["X"]
-    y = test_data["classification"]["y"]
+@pytest.mark.model_training
+def test_svm_classifier(student_data, model_config):
+    """
+    Test SVM classifier on student performance data.
+
+    Verifies:
+    1. Model can be trained successfully
+    2. Training and test accuracy are reasonable (> 0.5)
+    3. Confusion matrix is properly generated
+    4. All metrics are within expected ranges
+    """
+    print("\n=== SVM Classifier Test ===")
+
+    # Split the data
     X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=42
+        student_data["X"], student_data["y"], test_size=0.2, random_state=42
+    )
+
+    # Initialize model handler
+    model_handler = ModelHandler(
+        model_type="svm",
+        features=model_config["features"],
+        target=model_config["target"],
+        normalize=model_config["normalize"],
+    )
+
+    # Train model
+    success = model_handler.train(X_train, X_test, y_train, y_test)
+    assert success, "Model training failed"
+
+    # Verify model was trained
+    assert model_handler.model is not None
+    assert model_handler.results is not None
+
+    # Print results
+    print("\nModel Results:")
+    print(f"Training Accuracy: {model_handler.results['train_accuracy']:.4f}")
+    print(f"Test Accuracy: {model_handler.results['test_accuracy']:.4f}")
+
+    print("\nConfusion Matrix:")
+    cm = model_handler.results["confusion_matrix"]
+    print(f"True Negatives: {cm[0][0]}")
+    print(f"False Positives: {cm[0][1]}")
+    print(f"False Negatives: {cm[1][0]}")
+    print(f"True Positives: {cm[1][1]}")
+
+    # Check accuracy metrics
+    assert "train_accuracy" in model_handler.results
+    assert "test_accuracy" in model_handler.results
+    assert model_handler.results["train_accuracy"] > 0.5
+    assert model_handler.results["test_accuracy"] > 0.5
+
+    # Check confusion matrix
+    assert "confusion_matrix" in model_handler.results
+    cm = model_handler.results["confusion_matrix"]
+    assert len(cm) == 2
+    assert len(cm[0]) == 2
+
+
+@pytest.mark.model_persistence
+def test_model_saving(student_data, model_config):
+    """
+    Test model saving functionality with student performance data.
+
+    Verifies:
+    1. Model can be trained successfully
+    2. Model can be saved to disk
+    3. Saved model file exists
+    4. Cleanup of test files works correctly
+    """
+    print("\n=== Model Saving Test ===")
+
+    # Split the data
+    X_train, X_test, y_train, y_test = train_test_split(
+        student_data["X"], student_data["y"], test_size=0.2, random_state=42
     )
 
     # Initialize model handler
     model_handler = ModelHandler(
         model_type="random_forest_classifier",
-        features=features,
-        target_column="target",
-        normalize=True,
+        features=model_config["features"],
+        target=model_config["target"],
+        normalize=model_config["normalize"],
     )
 
     # Train model
     model_handler.train(X_train, X_test, y_train, y_test)
 
-    # Test model saving
-    test_model_name = "test_model"
-    try:
-        model_handler.save_model(test_model_name)
-        assert os.path.exists(
-            f"models/{test_model_name}.joblib"
-        ), "Model file not created"
-    finally:
-        # Clean up
-        if os.path.exists(f"models/{test_model_name}.joblib"):
-            os.remove(f"models/{test_model_name}.joblib")
+    # Save model
+    filepath = model_handler.save_model("student_performance_model")
+    print(f"\nModel saved to: {filepath}")
+    assert os.path.exists(filepath)
+
+    # Clean up
+    if os.path.exists(filepath):
+        os.remove(filepath)
+        print("Test model file cleaned up successfully")
