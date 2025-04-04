@@ -181,14 +181,13 @@ Les contributions sont les bienvenues ! Voici comment contribuer :
 
 ### Équipe de Développement
 
-| Nom           | Rôle                  | Email                    |
-| ------------- | --------------------- | ------------------------ |
-| Utilisateur 1 | Scrum Master          | utilisateur1@example.com |
-| Utilisateur 2 | Scrum Master          | utilisateur2@example.com |
-| Utilisateur 3 | Scrum Master          | utilisateur3@example.com |
-| Utilisateur 4 | Scrum Master          | utilisateur4@example.com |
-| Utilisateur 5 | Développeur           | utilisateur5@example.com |
-| Utilisateur 6 | Développeur           | utilisateur6@example.com |
+| Nom                               | 
+| --------------------------------- | 
+| Paul Alognon-Anani                | 
+| Castelnau Godefroy Ondongo        | 
+| Amadou Tidiane Diallo             | 
+| Mayombo Abel M.O                  | 
+| Joan-Yves Darys Anguilet          | 
 
 ## 📚 Spécifications du Projet
 
