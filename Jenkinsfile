@@ -2,7 +2,6 @@ pipeline {
     agent any
     
     environment {
-        PYTHON_VERSION = '3.11'
         VENV_PATH = 'venv'
         TEST_DATA_PATH = 'data/test_data.csv'
     }
@@ -18,7 +17,7 @@ pipeline {
             steps {
                 // Create and activate virtual environment
                 sh '''
-                    python${PYTHON_VERSION} -m venv ${VENV_PATH}
+                    python -m venv ${VENV_PATH}
                     . ${VENV_PATH}/bin/activate
                     python -m pip install -r requirements.txt
                 '''
