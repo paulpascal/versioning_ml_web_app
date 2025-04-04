@@ -65,39 +65,23 @@ def about():
     # Team members data
     team_members = [
         {
-            "name": "Utilisateur 1",
-            "role": "Scrum Master",
-            "email": "utilisateur1@example.com",
+            "name": "Paul Alognon-Anani",
             "avatar": "https://cdn-icons-png.flaticon.com/512/1077/1077114.png",
         },
         {
-            "name": "Utilisateur 2",
-            "role": "Scrum Master",
-            "email": "utilisateur2@example.com",
+            "name": "Castelnau Godefroy Ondongo",
             "avatar": "https://cdn-icons-png.flaticon.com/512/1077/1077114.png",
         },
         {
-            "name": "Utilisateur 3",
-            "role": "Scrum Master",
-            "email": "utilisateur3@example.com",
+            "name": "Amadou Tidiane Diallo",
             "avatar": "https://cdn-icons-png.flaticon.com/512/1077/1077114.png",
         },
         {
-            "name": "Utilisateur 4",
-            "role": "Scrum Master",
-            "email": "utilisateur4@example.com",
+            "name": "Mayombo Abel M.O",
             "avatar": "https://cdn-icons-png.flaticon.com/512/1077/1077114.png",
         },
         {
-            "name": "Utilisateur 5",
-            "role": "Développeur",
-            "email": "utilisateur5@example.com",
-            "avatar": "https://cdn-icons-png.flaticon.com/512/1077/1077114.png",
-        },
-        {
-            "name": "Utilisateur 6",
-            "role": "Développeur",
-            "email": "utilisateur6@example.com",
+            "name": "Joan-Yves Darys Anguilet",
             "avatar": "https://cdn-icons-png.flaticon.com/512/1077/1077114.png",
         },
     ]
