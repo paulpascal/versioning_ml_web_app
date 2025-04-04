@@ -20,7 +20,7 @@ pipeline {
                 sh '''
                     python${PYTHON_VERSION} -m venv ${VENV_PATH}
                     . ${VENV_PATH}/bin/activate
-                    pip install -r requirements.txt
+                    python -m pip install -r requirements.txt
                 '''
             }
         }
