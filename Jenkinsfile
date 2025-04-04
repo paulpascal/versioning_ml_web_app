@@ -19,11 +19,14 @@ pipeline {
                 // Clean up any existing virtual environment first
                 sh 'rm -rf ${VENV_PATH}'
                 
-                // Create and activate virtual environment with proper error handling
+                // Install virtualenv if needed
+                sh 'pip install virtualenv || pip3 install virtualenv'
+                
+                // Create virtual environment using virtualenv with timeout and error handling
                 sh '''
-                    python3 -m venv ${VENV_PATH} || python -m venv ${VENV_PATH}
-                    . ${VENV_PATH}/bin/activate
-                    pip install --upgrade pip
+                    timeout 60 virtualenv ${VENV_PATH} || true
+                    . ${VENV_PATH}/bin/activate || (sleep 5 && . ${VENV_PATH}/bin/activate)
+                    pip install --upgrade pip setuptools wheel
                     pip install -r requirements.txt
                 '''
             }
