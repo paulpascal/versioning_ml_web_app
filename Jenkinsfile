@@ -1,12 +1,8 @@
 pipeline {
-    agent {
-        docker {
-            image 'python:3.9-slim'
-            args '-v ${WORKSPACE}:${WORKSPACE}'
-        }
-    }
+    agent any
     
     environment {
+        VENV_PATH = 'venv'
         PYTHONPATH = "${WORKSPACE}"
     }
     
@@ -19,8 +15,10 @@ pipeline {
         
         stage('Setup') {
             steps {
+                // Create and activate virtual environment
                 sh '''
-                    python -m pip install --upgrade pip
+                    python -m venv ${VENV_PATH}
+                    . ${VENV_PATH}/bin/activate
                     python -m pip install -r requirements.txt
                 '''
             }
@@ -29,6 +27,7 @@ pipeline {
         stage('Source Code Tests') {
             steps {
                 sh '''
+                    . ${VENV_PATH}/bin/activate
                     # Run test data handler tests with detailed logging
                     PYTHONPATH=${WORKSPACE} pytest tests/test_data_handler.py \
                         --junitxml=data-handler-test-results.xml \
@@ -49,6 +48,7 @@ pipeline {
         stage('Model Training Test') {
             steps {
                 sh '''
+                    . ${VENV_PATH}/bin/activate
                     # Run model training tests with detailed logging
                     PYTHONPATH=${WORKSPACE} pytest tests/test_model_training.py \
                         --junitxml=model-training-test-results.xml \
@@ -68,6 +68,9 @@ pipeline {
             
             // Archive console output - using exact filenames
             archiveArtifacts artifacts: 'data-handler-test-results.xml,model-handler-test-results.xml,model-training-test-results.xml', allowEmptyArchive: true
+            
+            // Clean up
+            sh 'rm -rf ${VENV_PATH}'
             
             // Print test summary
             script {
