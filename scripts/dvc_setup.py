@@ -76,8 +76,3 @@ def add_and_push_model(model_path):
 if __name__ == "__main__":
     # Setup DVC with Google Drive
     setup_dvc_gdrive()
-
-    # Example: Add data from a specific path
-    data_path = os.path.join("data", "raw", "student_performance.csv")
-    if os.path.exists(data_path):
-        add_to_dvc(data_path)
