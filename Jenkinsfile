@@ -10,7 +10,7 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'master', url: 'https://github.com/paulpascal/versioning_ml_web_app.git'
+                git branch: 'main', url: 'https://github.com/paulpascal/versioning_ml_web_app.git'
             }
         }
         
