@@ -10,8 +10,7 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                // Checkout code from Git repository
-                checkout scm
+                git branch: 'master', url: 'https://github.com/paulpascal/versioning_ml_web_app.git'
             }
         }
         
