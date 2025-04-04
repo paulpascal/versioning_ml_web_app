@@ -63,26 +63,14 @@ pipeline {
     
     post {
         always {
-            // Archive test results - using exact filenames
+            // Archive test results - this will show them in the Jenkins UI
             junit 'data-handler-test-results.xml,model-handler-test-results.xml,model-training-test-results.xml'
             
-            // Archive console output - using exact filenames
+            // Archive artifacts for download
             archiveArtifacts artifacts: 'data-handler-test-results.xml,model-handler-test-results.xml,model-training-test-results.xml', allowEmptyArchive: true
             
             // Clean up
             sh 'rm -rf ${VENV_PATH}'
-            
-            // Print test summary
-            script {
-                def testResults = currentBuild.rawBuild.getAction(hudson.tasks.junit.TestResultAction.class)
-                if (testResults != null) {
-                    echo "Test Summary:"
-                    echo "Total Tests: ${testResults.totalCount}"
-                    echo "Failed Tests: ${testResults.failCount}"
-                    echo "Skipped Tests: ${testResults.skipCount}"
-                    echo "Passed Tests: ${testResults.totalCount - testResults.failCount - testResults.skipCount}"
-                }
-            }
         }
         
         success {
@@ -91,18 +79,6 @@ pipeline {
         
         failure {
             echo "Pipeline failed. Check the test results for details."
-            // Print failed test details without accessing failedTests directly
-            script {
-                def testResults = currentBuild.rawBuild.getAction(hudson.tasks.junit.TestResultAction.class)
-                if (testResults != null && testResults.failCount > 0) {
-                    echo "Failed Tests: ${testResults.failCount}"
-                    // Use a safer way to access failed tests
-                    def failed = testResults.getFailedTests()
-                    failed.each { test ->
-                        echo "- ${test.name}: ${test.errorDetails}"
-                    }
-                }
-            }
         }
     }
 } 
