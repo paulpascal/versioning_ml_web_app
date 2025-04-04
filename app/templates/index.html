@@ -1,0 +1,519 @@
+{% extends "base.html" %} {% block title %}Upload Data{% endblock %} {% block
+content %}
+
+<!-- Success Message -->
+<div id="successAlert" class="hidden toast toast-end">
+  <div class="alert bg-green-50 text-green-700 border border-green-100">
+    <i class="bi bi-check-circle-fill"></i>
+    <span id="successMessage"></span>
+  </div>
+</div>
+
+<div class="flex justify-center">
+  <div class="w-full max-w-4xl">
+    <!-- Single Card containing all sections -->
+    <div class="card bg-base-100 shadow-xl">
+      <div class="card-body space-y-6">
+        <!-- App Description -->
+        <div>
+          <h1 class="card-title text-2xl text-primary mb-4">ML Web App</h1>
+          <p class="text-gray-600">
+            This web application provides an intuitive interface for training
+            and evaluating machine learning models. Our platform supports
+            various algorithms including Support Vector Machines (SVM), Random
+            Forest, and Linear Regression.
+          </p>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Upload Form -->
+        <div>
+          <h2 class="text-xl font-semibold mb-2">Upload Your Data</h2>
+          <p class="text-gray-600 mb-4">
+            Start by uploading your dataset to train a machine learning model.
+          </p>
+
+          <form id="uploadForm" class="space-y-4" novalidate>
+            <!-- File Upload -->
+            <div class="form-control w-full">
+              <label class="label">
+                <span class="label-text font-medium"
+                  >Choose a file (CSV, XLSX, XLS)</span
+                >
+              </label>
+              <input
+                type="file"
+                class="file-input file-input-bordered w-full"
+                id="file"
+                name="file"
+                accept=".csv,.xlsx,.xls"
+                required
+              />
+              <label class="label">
+                <span class="label-text-alt text-error hidden"
+                  >Please select a valid file.</span
+                >
+              </label>
+            </div>
+
+            <!-- Preview Toggle -->
+            <div class="form-control">
+              <label class="label cursor-pointer justify-start gap-4">
+                <input
+                  type="checkbox"
+                  class="toggle toggle-primary"
+                  id="previewSwitch"
+                  disabled
+                />
+                <span class="label-text">Show data preview</span>
+              </label>
+            </div>
+
+            <!-- Loading Indicator -->
+            <div id="loadingIndicator" class="hidden space-y-2">
+              <div class="w-full h-4 bg-base-200 rounded-full overflow-hidden">
+                <div
+                  class="progress-bar transition-all duration-300 h-full bg-primary rounded-full flex items-center justify-center"
+                  id="progressBar"
+                  style="width: 0%"
+                >
+                  <span class="progress-text text-xs text-white px-2">0%</span>
+                </div>
+              </div>
+              <p class="text-sm text-base-content/70">Processing data...</p>
+            </div>
+
+            <!-- Preview Section -->
+            <div id="previewSection" class="hidden space-y-2">
+              <h3 class="text-lg font-semibold">Data Preview</h3>
+              <div class="overflow-x-auto rounded border border-base-200">
+                <table class="table table-zebra table-xs w-full font-fira-code">
+                  <thead>
+                    <tr
+                      id="previewHeader"
+                      class="text-xs bg-base-200 text-base-content/70 font-fira-code"
+                    ></tr>
+                  </thead>
+                  <tbody
+                    id="previewBody"
+                    class="text-xs leading-tight font-fira-code"
+                  ></tbody>
+                </table>
+              </div>
+              <p class="text-xs text-base-content/60 italic">
+                Showing first 5 rows of the dataset
+              </p>
+            </div>
+
+            <div class="card-actions justify-end">
+              <button
+                type="submit"
+                class="btn btn-primary"
+                id="nextBtn"
+                disabled
+              >
+                Next: Configure Model
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Key Features -->
+        <div>
+          <h3 class="text-lg font-semibold mb-4">Key Features</h3>
+          <ul class="grid grid-cols-1 md:grid-cols-2 gap-2">
+            <li class="flex items-center gap-2">
+              <svg
+                class="w-5 h-5 text-primary"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M5 13l4 4L19 7"
+                ></path>
+              </svg>
+              Easy data upload (CSV, XLSX, XLS)
+            </li>
+            <li class="flex items-center gap-2">
+              <svg
+                class="w-5 h-5 text-primary"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M5 13l4 4L19 7"
+                ></path>
+              </svg>
+              Interactive model configuration
+            </li>
+            <li class="flex items-center gap-2">
+              <svg
+                class="w-5 h-5 text-primary"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M5 13l4 4L19 7"
+                ></path>
+              </svg>
+              Real-time training progress
+            </li>
+            <li class="flex items-center gap-2">
+              <svg
+                class="w-5 h-5 text-primary"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M5 13l4 4L19 7"
+                ></path>
+              </svg>
+              Comprehensive evaluation metrics
+            </li>
+            <li class="flex items-center gap-2">
+              <svg
+                class="w-5 h-5 text-primary"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M5 13l4 4L19 7"
+                ></path>
+              </svg>
+              DVC for version control
+            </li>
+            <li class="flex items-center gap-2">
+              <svg
+                class="w-5 h-5 text-primary"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M5 13l4 4L19 7"
+                ></path>
+              </svg>
+              Jenkins CI/CD pipeline
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %} {% block extra_js %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    // UI Elements
+    const UI = {
+      form: document.getElementById("uploadForm"),
+      fileInput: document.getElementById("file"),
+      previewSwitch: document.getElementById("previewSwitch"),
+      previewSection: document.getElementById("previewSection"),
+      nextBtn: document.getElementById("nextBtn"),
+      previewHeader: document.getElementById("previewHeader"),
+      previewBody: document.getElementById("previewBody"),
+      loadingIndicator: document.getElementById("loadingIndicator"),
+      progressBar: document.getElementById("progressBar"),
+      progressText: document
+        .getElementById("progressBar")
+        .querySelector(".progress-text"),
+      successAlert: document.getElementById("successAlert"),
+      successMessage: document.getElementById("successMessage"),
+    };
+
+    // State Management
+    const State = {
+      previewData: null,
+      pollingTimeout: null,
+
+      reset() {
+        this.previewData = null;
+        if (this.pollingTimeout) {
+          clearTimeout(this.pollingTimeout);
+        }
+      },
+    };
+
+    // Toast Notifications
+    const Toast = {
+      show(message, type = "info") {
+        const toast = document.createElement("div");
+        toast.className = `toast toast-end`;
+
+        const alertClass =
+          type === "error"
+            ? "alert bg-red-50 text-red-700 border border-red-100"
+            : "alert bg-green-50 text-green-700 border border-green-100";
+
+        toast.innerHTML = `
+          <div class="${alertClass}">
+            <span>${message}</span>
+          </div>
+        `;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+      },
+    };
+
+    // Progress Management
+    const Progress = {
+      show() {
+        UI.loadingIndicator.classList.remove("hidden");
+      },
+
+      hide() {
+        UI.loadingIndicator.classList.add("hidden");
+      },
+
+      update(progress) {
+        UI.progressBar.style.width = `${progress}%`;
+        UI.progressText.textContent = `${progress}%`;
+      },
+
+      reset() {
+        this.update(0);
+      },
+    };
+
+    // Preview Management
+    const Preview = {
+      show() {
+        UI.previewSection.classList.remove("hidden");
+      },
+
+      hide() {
+        UI.previewSection.classList.add("hidden");
+      },
+
+      display(data) {
+        if (!data || data.length === 0) return;
+
+        // Clear previous content
+        UI.previewHeader.innerHTML = "";
+        UI.previewBody.innerHTML = "";
+
+        // Add headers
+        Object.keys(data[0]).forEach((key) => {
+          const th = document.createElement("th");
+          th.textContent = key;
+          UI.previewHeader.appendChild(th);
+        });
+
+        // Add rows (limit to first 5 rows)
+        data.slice(0, 5).forEach((row) => {
+          const tr = document.createElement("tr");
+          Object.values(row).forEach((value) => {
+            const td = document.createElement("td");
+            td.textContent = value;
+            tr.appendChild(td);
+          });
+          UI.previewBody.appendChild(tr);
+        });
+      },
+
+      toggle(show) {
+        if (show && State.previewData) {
+          this.show();
+          this.display(State.previewData);
+        } else {
+          this.hide();
+        }
+      },
+    };
+
+    // Form Validation
+    const FormValidator = {
+      validateFile() {
+        const errorElement =
+          UI.fileInput.parentElement.querySelector(".text-error");
+        const isValid = UI.fileInput.files.length > 0;
+        errorElement.classList.toggle("hidden", isValid);
+        return isValid;
+      },
+    };
+
+    // API Calls
+    const API = {
+      async uploadFile(file) {
+        const formData = new FormData();
+        formData.append("file", file);
+
+        try {
+          const response = await fetch('{{ url_for("main.upload_file") }}', {
+            method: "POST",
+            body: formData,
+          });
+
+          const contentType = response.headers.get("content-type");
+          if (!contentType || !contentType.includes("application/json")) {
+            throw new Error("Invalid response format from server");
+          }
+
+          const data = await response.json();
+          if (!data.success) {
+            throw new Error(data.error || "Error uploading file");
+          }
+
+          return data;
+        } catch (error) {
+          console.error("Error:", error);
+          throw error;
+        }
+      },
+
+      async checkLoadingStatus() {
+        try {
+          const response = await fetch(
+            '{{ url_for("main.data_loading_status") }}'
+          );
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          return response.json();
+        } catch (error) {
+          console.error("Error:", error);
+          throw error;
+        }
+      },
+    };
+
+    // Upload Controller
+    const UploadController = {
+      async handleFileUpload(file) {
+        // Reset state
+        State.reset();
+        UI.previewSwitch.disabled = true;
+        UI.previewSwitch.checked = false;
+        Preview.hide();
+        UI.nextBtn.disabled = true;
+        Progress.show();
+        Progress.reset();
+
+        try {
+          await API.uploadFile(file);
+          this.pollLoadingStatus();
+        } catch (error) {
+          Toast.show(
+            error.message || "Error uploading file. Please try again.",
+            "error"
+          );
+          Progress.hide();
+        }
+      },
+
+      async pollLoadingStatus() {
+        try {
+          const data = await API.checkLoadingStatus();
+
+          if (data.error) {
+            throw new Error(data.error);
+          }
+
+          if (data.in_progress) {
+            Progress.update(data.progress);
+            State.pollingTimeout = setTimeout(
+              () => this.pollLoadingStatus(),
+              500
+            );
+          } else if (data.completed) {
+            Progress.hide();
+            UI.nextBtn.disabled = false;
+            UI.previewSwitch.disabled = false;
+            State.previewData = data.preview;
+            Toast.show("Data loaded successfully!", "success");
+          } else {
+            throw new Error("Invalid status received from server");
+          }
+        } catch (error) {
+          console.error("Error:", error);
+          State.reset();
+          Progress.hide();
+          Toast.show("Error processing data: " + error.message, "error");
+        }
+      },
+
+      handleSuccessMessage() {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get("success") === "true") {
+          UI.successMessage.textContent = "Model saved successfully";
+          UI.successAlert.classList.remove("hidden");
+
+          setTimeout(() => {
+            UI.successAlert.classList.add("hidden");
+          }, 3000);
+
+          window.history.replaceState(
+            {},
+            document.title,
+            window.location.pathname
+          );
+        }
+      },
+
+      init() {
+        // Initialize event listeners
+        UI.fileInput.addEventListener("change", () => {
+          if (UI.fileInput.files.length > 0) {
+            this.handleFileUpload(UI.fileInput.files[0]);
+          }
+        });
+
+        UI.previewSwitch.addEventListener("change", () => {
+          Preview.toggle(UI.previewSwitch.checked);
+        });
+
+        UI.form.addEventListener("submit", (e) => {
+          e.preventDefault();
+
+          if (!FormValidator.validateFile()) {
+            return;
+          }
+
+          try {
+            window.location.href = "{{ url_for('main.setup') }}";
+          } catch (error) {
+            Toast.show(
+              "Error: Unable to proceed to setup page. Please try again.",
+              "error"
+            );
+          }
+        });
+
+        // Check for success message
+        this.handleSuccessMessage();
+      },
+    };
+
+    // Initialize the upload page
+    UploadController.init();
+  });
+</script>
+{% endblock %}

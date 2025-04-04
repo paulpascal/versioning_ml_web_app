@@ -1,0 +1,84 @@
+{% extends "base.html" %} {% block title %}About Us{% endblock %} {% block
+content %}
+
+<div class="flex justify-center">
+  <div class="w-full max-w-4xl">
+    <div class="card bg-base-100 shadow-xl">
+      <div class="card-body space-y-6">
+        <h2 class="card-title text-2xl">About Our Team</h2>
+
+        <!-- Project Info -->
+        <div class="grid gap-4">
+          <div class="bg-primary/5 rounded-lg p-4 border border-primary/10">
+            <h3 class="text-lg font-semibold text-primary mb-2">
+              Academic Project
+            </h3>
+            <p class="text-sm text-gray-700">
+              We are Master 2 students at
+              <a
+                href="https://dit.sn"
+                class="text-primary hover:text-primary-focus"
+                target="_blank"
+                >Dakar Institute of Technology (DIT)</a
+              >. This project was developed as part of our advanced software
+              engineering coursework, focusing on modern DevOps practices and
+              Machine Learning operations.
+            </p>
+          </div>
+
+          <div class="bg-base-200 rounded-lg p-4">
+            <h3 class="text-lg font-semibold mb-2">Project Objectives</h3>
+            <ul class="space-y-2 list-disc pl-4 text-sm text-base-content/70">
+              <li>
+                Apply source code version control concepts using Git and GitHub
+                for collaborative development
+              </li>
+              <li>
+                Implement Machine Learning data and model versioning using DVC
+                (Data Version Control)
+              </li>
+              <li>
+                Set up a continuous integration (CI) pipeline using Jenkins for
+                automated testing and deployment
+              </li>
+            </ul>
+          </div>
+
+          <p class="text-sm text-base-content/70">
+            Our web application demonstrates these concepts in practice,
+            providing an intuitive interface for training and evaluating machine
+            learning models while maintaining professional standards for version
+            control and continuous integration.
+          </p>
+        </div>
+
+        <!-- Team Members -->
+        <div class="space-y-4">
+          <h3 class="text-lg font-semibold">Team Members</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {% for member in team_members %}
+            <div class="card bg-base-200 hover:bg-base-300 transition-colors">
+              <div class="card-body p-4">
+                <div class="flex items-center gap-3">
+                  <div class="avatar">
+                    <div
+                      class="w-12 h-12 rounded-full ring ring-primary ring-offset-base-100 ring-offset-2"
+                    >
+                      <img src="{{ member.avatar }}" alt="{{ member.name }}" />
+                    </div>
+                  </div>
+                  <div>
+                    <h3 class="font-medium text-base">{{ member.name }}</h3>
+                  </div>
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

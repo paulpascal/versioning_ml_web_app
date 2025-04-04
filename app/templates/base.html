@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}{% endblock %} - {{ config.APP_NAME }}</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300..700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Tailwind CSS and DaisyUI -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/daisyui@4.7.2/dist/full.min.css"
+      rel="stylesheet"
+      type="text/css"
+    />
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Icons -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+    />
+
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              primary: "#3b82f6",
+              secondary: "#6b7280",
+              accent: "#10b981",
+            },
+            fontFamily: {
+              sans: ["Inter", "system-ui", "sans-serif"],
+              mono: ["JetBrains Mono", "monospace"],
+              "fira-code": ['"Fira Code"', "monospace"],
+            },
+          },
+        },
+        plugins: [require("daisyui")],
+        daisyui: {
+          themes: ["light"],
+        },
+      };
+    </script>
+
+    <style>
+      /* Ensure proper font loading */
+      html {
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
+      }
+
+      /* Apply monospace font to specific elements */
+      pre,
+      code,
+      .font-mono {
+        font-family: "JetBrains Mono", monospace;
+      }
+
+      /* Smooth font rendering */
+      body {
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        text-rendering: optimizeLegibility;
+      }
+    </style>
+  </head>
+  <body class="min-h-screen bg-gray-50 flex flex-col">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-lg">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between h-16">
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <a
+                href="{{ url_for('main.index') }}"
+                class="text-xl font-bold text-primary tracking-tight"
+              >
+                {{ config.APP_NAME }}
+              </a>
+            </div>
+            <div class="hidden md:ml-6 md:flex md:space-x-8">
+              <a
+                href="{{ url_for('main.index') }}"
+                class="inline-flex items-center px-1 pt-1 text-sm font-medium {% if request.endpoint == 'main.index' %}text-primary border-b-2 border-primary{% else %}text-gray-500 hover:text-gray-700 hover:border-gray-300{% endif %}"
+              >
+                Home
+              </a>
+              <a
+                href="{{ url_for('main.about') }}"
+                class="inline-flex items-center px-1 pt-1 text-sm font-medium {% if request.endpoint == 'main.about' %}text-primary border-b-2 border-primary{% else %}text-gray-500 hover:text-gray-700 hover:border-gray-300{% endif %}"
+              >
+                About
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Steps Progress -->
+    {% if request.endpoint in ['main.index', 'main.setup', 'main.train'] %}
+    <div class="bg-white border-b border-gray-200 py-4">
+      <div class="max-w-5xl mx-auto px-4">
+        <ul class="steps steps-horizontal w-full" id="progressSteps">
+          <li class="step {% if request.endpoint in ['main.index', 'main.setup', 'main.train'] %}step-primary{% endif %}" data-step="upload">
+            <span class="text-xs md:text-sm">Upload Data</span>
+          </li>
+          <li class="step {% if request.endpoint in ['main.setup', 'main.train'] %}step-primary{% endif %}" data-step="configure">
+            <span class="text-xs md:text-sm">Configure Model</span>
+          </li>
+          <li class="step {% if request.endpoint == 'main.train' %}step-primary{% endif %}" data-step="train">
+            <span class="text-xs md:text-sm">Train Model</span>
+          </li>
+          <li class="step" data-step="save">
+            <span class="text-xs md:text-sm">Save Model</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Main Content -->
+    <main class="flex-grow max-w-7xl w-full mx-auto py-6 sm:px-6 lg:px-8">
+      {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-gray-200 py-4">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <p class="text-center text-sm text-gray-500">
+          © {{ now.year }} ML Web App. All rights reserved.
+        </p>
+      </div>
+    </footer>
+
+    {% block extra_js %}{% endblock %}
+  </body>
+</html>

@@ -1,0 +1,978 @@
+{% extends "base.html" %} {% block title %}Train Model{% endblock %} {% block
+head %}
+<!-- Add html2canvas for saving results as image -->
+<script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+{% endblock %} {% block content %}
+
+<div class="flex justify-center">
+  <div class="w-full max-w-5xl">
+    <div class="card bg-base-100 shadow-xl">
+      <div class="card-body">
+        <h2 class="card-title text-2xl mb-6">Model Training</h2>
+
+        <!-- Model Configuration Summary -->
+        <div class="card bg-base-200 mb-6">
+          <div class="card-body p-4">
+            <h3 class="card-title text-lg mb-2">Model Configuration</h3>
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+              <div>
+                <span class="font-medium">Model Type:</span>
+                <span class="ml-2">{{ model_type }}</span>
+              </div>
+              <div>
+                <span class="font-medium">Target:</span>
+                <span class="ml-2">{{ target_column }}</span>
+              </div>
+              <div>
+                <span class="font-medium">Train/Test Split:</span>
+                <span class="ml-2">80/20</span>
+              </div>
+              <div>
+                <span class="font-medium">Normalization:</span>
+                {% if normalize %}
+                <span class="ml-2 text-green-600">Enabled</span>
+                {% else %}
+                <span class="ml-2 text-yellow-600">Disabled</span>
+                {% endif %}
+              </div>
+            </div>
+            <div class="mt-2">
+              <span class="font-medium">Selected Features:</span>
+              <div class="flex flex-wrap gap-2 mt-1">
+                {% for column in selected_columns %}
+                <span class="badge badge-neutral">{{ column }}</span>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Training Status -->
+        <div class="space-y-4 mb-6">
+          <h3 class="text-lg font-semibold">Training Progress</h3>
+          <div class="w-full h-4 bg-gray-200 rounded-full overflow-hidden">
+            <div
+              class="progress-bar transition-all duration-300 h-full bg-primary rounded-full flex items-center justify-center"
+              id="progressBar"
+              style="width: 0%"
+            >
+              <span class="progress-text text-xs text-white px-2">0%</span>
+            </div>
+          </div>
+          <p class="text-sm text-gray-600" id="statusText">
+            Waiting to start training...
+          </p>
+        </div>
+
+        <!-- Training Logs Toggle -->
+        <div class="form-control w-full max-w-xs mb-6">
+          <label class="label cursor-pointer justify-start gap-4">
+            <input
+              type="checkbox"
+              class="toggle toggle-primary"
+              id="showLogs"
+            />
+            <span class="label-text">Show Training Logs</span>
+          </label>
+        </div>
+
+        <!-- Training Logs -->
+        <div id="trainingLogs" class="hidden mb-6">
+          <h3 class="text-lg font-semibold mb-2">Training Logs</h3>
+          <div
+            class="bg-neutral-900 rounded-lg p-3 h-40 overflow-y-auto font-fira-code text-xs leading-snug"
+          >
+            <pre
+              id="logs"
+              class="whitespace-pre-wrap text-neutral-100 font-fira-code"
+            ></pre>
+          </div>
+        </div>
+
+        <!-- Results Section -->
+        <div id="resultsSection" class="hidden space-y-6">
+          <div class="alert bg-green-50 text-green-700 border border-green-100">
+            <i class="bi bi-check-circle-fill"></i>
+            <div>
+              <h4 class="font-bold">Training Completed Successfully!</h4>
+              <p class="text-sm">
+                Your model has been trained and is ready to be saved. Review the
+                results below.
+              </p>
+            </div>
+          </div>
+
+          <!-- Warning Alert -->
+          <div
+            id="warningAlert"
+            class="alert bg-yellow-50 text-yellow-700 border border-yellow-100 hidden"
+          >
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            <div>
+              <h4 class="font-bold">Warning</h4>
+              <p class="text-sm" id="warningMessage"></p>
+            </div>
+          </div>
+
+          <div class="bg-base-200 rounded-lg p-6" id="resultsContent">
+            <!-- Header with title -->
+            <div class="flex justify-between items-center mb-4">
+              <h3 class="text-lg font-semibold">Training Results</h3>
+            </div>
+
+            <!-- Two-column layout for metrics -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <!-- Performance Metrics -->
+              <div class="card bg-base-100 shadow-sm">
+                <div class="card-body p-4">
+                  <h4 class="font-semibold mb-2">Model Performance</h4>
+                  <table class="table table-sm w-full" id="resultsTable">
+                    <tbody>
+                      <tr>
+                        <th class="font-medium w-1/2">Training Accuracy</th>
+                        <td class="text-right"></td>
+                      </tr>
+                      <tr>
+                        <th class="font-medium">Test Accuracy</th>
+                        <td class="text-right"></td>
+                      </tr>
+                      <tr>
+                        <th class="font-medium">Precision</th>
+                        <td class="text-right"></td>
+                      </tr>
+                      <tr>
+                        <th class="font-medium">Recall</th>
+                        <td class="text-right"></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- Confusion Matrix -->
+              <div class="card bg-base-100 shadow-sm" id="confusionMatrixCard">
+                <div class="card-body p-4">
+                  <h4 class="font-semibold mb-2">Confusion Matrix</h4>
+                  <table
+                    class="table table-sm w-full text-center"
+                    id="confusionMatrix"
+                  >
+                    <thead>
+                      <tr>
+                        <th></th>
+                        <th class="text-center">Pred. Negative</th>
+                        <th class="text-center">Pred. Positive</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <th>Act. Negative</th>
+                        <td class="bg-green-50"></td>
+                        <td class="bg-red-50"></td>
+                      </tr>
+                      <tr>
+                        <th>Act. Positive</th>
+                        <td class="bg-red-50"></td>
+                        <td class="bg-green-50"></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- Feature Importance -->
+            <div class="mt-6">
+              <div
+                class="card bg-base-100 shadow-sm"
+                id="featureImportanceCard"
+              >
+                <div class="card-body p-4">
+                  <h4 class="font-semibold mb-2">Feature Importance</h4>
+                  <div class="overflow-x-auto">
+                    <table class="table table-sm w-full" id="featureImportance">
+                      <thead>
+                        <tr>
+                          <th>Feature</th>
+                          <th class="text-right">Importance Score</th>
+                        </tr>
+                      </thead>
+                      <tbody></tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Action Buttons after training -->
+          <div class="card-actions justify-end space-x-4">
+            <a
+              href="{{ url_for('main.setup') }}"
+              class="btn btn-outline btn-neutral"
+            >
+              Back to Setup
+            </a>
+            <button class="btn btn-primary" id="showSaveModelBtn">
+              <i class="bi bi-save"></i> Save Model
+            </button>
+          </div>
+        </div>
+
+        <!-- Initial Action Buttons -->
+        <div id="actionButtons" class="card-actions justify-end space-x-4">
+          <a href="{{ url_for('main.setup') }}" class="btn btn-outline">
+            Back to Setup
+          </a>
+          <button class="btn btn-primary" id="startTrainingBtn">
+            Start Training
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Save Model Modal -->
+<dialog id="saveModelModal" class="modal">
+  <div class="modal-box">
+    <h3 class="font-bold text-lg mb-4">Save Trained Model</h3>
+    <form method="dialog">
+      <div class="form-control w-full">
+        <label class="label">
+          <span class="label-text">Model Name</span>
+        </label>
+        <input
+          type="text"
+          id="modelName"
+          placeholder="Enter model name"
+          class="input input-bordered w-full"
+        />
+        <label class="label">
+          <span class="label-text-alt">e.g., 'svm_model_v1'</span>
+        </label>
+      </div>
+
+      <div class="modal-action">
+        <button class="btn btn-outline" onclick="window.saveModelModal.close()">
+          Cancel
+        </button>
+        <button type="button" class="btn btn-primary" id="saveModelBtn">
+          Save Model
+        </button>
+      </div>
+    </form>
+  </div>
+</dialog>
+
+{% endblock %} {% block extra_js %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    // UI Elements
+    const UI = {
+      progressBar: document.getElementById("progressBar"),
+      statusText: document.getElementById("statusText"),
+      logsElement: document.getElementById("logs"),
+      startTrainingBtn: document.getElementById("startTrainingBtn"),
+      resultsSection: document.getElementById("resultsSection"),
+      metricsDisplay: document.getElementById("metricsDisplay"),
+      showLogs: document.getElementById("showLogs"),
+      trainingLogs: document.getElementById("trainingLogs"),
+      saveModelBtn: document.getElementById("saveModelBtn"),
+      saveModelModal: document.getElementById("saveModelModal"),
+      showSaveModelBtn: document.getElementById("showSaveModelBtn"),
+      actionButtons: document.getElementById("actionButtons"),
+    };
+
+    // State Management
+    let pollingInterval = null;
+
+    // Chart Management
+    const ChartManager = {
+      confusionMatrixChart: null,
+      featureImportanceChart: null,
+
+      createConfusionMatrixChart(data) {
+        const ctx = document.getElementById("confusionMatrixChart");
+        if (!ctx) return;
+
+        if (this.confusionMatrixChart) {
+          this.confusionMatrixChart.destroy();
+        }
+
+        // Check if confusion matrix data exists
+        if (
+          !data ||
+          !data.confusion_matrix ||
+          !Array.isArray(data.confusion_matrix)
+        ) {
+          console.warn("No confusion matrix data available");
+          return;
+        }
+
+        const cm = data.confusion_matrix;
+
+        // Validate confusion matrix structure
+        if (
+          cm.length !== 2 ||
+          !cm[0] ||
+          !cm[1] ||
+          cm[0].length !== 2 ||
+          cm[1].length !== 2
+        ) {
+          console.warn("Invalid confusion matrix structure");
+          return;
+        }
+
+        const total = cm[0][0] + cm[0][1] + cm[1][0] + cm[1][1];
+
+        this.confusionMatrixChart = new Chart(ctx, {
+          type: "bar",
+          data: {
+            labels: [
+              "True Negatives",
+              "False Positives",
+              "False Negatives",
+              "True Positives",
+            ],
+            datasets: [
+              {
+                data: [cm[0][0], cm[0][1], cm[1][0], cm[1][1]],
+                backgroundColor: [
+                  "rgba(72, 187, 120, 0.7)", // Green for TN
+                  "rgba(237, 100, 166, 0.7)", // Pink for FP
+                  "rgba(237, 100, 166, 0.7)", // Pink for FN
+                  "rgba(72, 187, 120, 0.7)", // Green for TP
+                ],
+                borderColor: [
+                  "rgb(72, 187, 120)",
+                  "rgb(237, 100, 166)",
+                  "rgb(237, 100, 166)",
+                  "rgb(72, 187, 120)",
+                ],
+                borderWidth: 1,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                display: false,
+              },
+              tooltip: {
+                callbacks: {
+                  label: function (context) {
+                    const value = context.raw;
+                    const percentage = ((value / total) * 100).toFixed(1);
+                    return `Count: ${value} (${percentage}%)`;
+                  },
+                },
+              },
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                title: {
+                  display: true,
+                  text: "Count",
+                },
+              },
+            },
+          },
+        });
+      },
+
+      createFeatureImportanceChart(data) {
+        const ctx = document.getElementById("featureImportanceChart");
+        if (!ctx) return;
+
+        if (this.featureImportanceChart) {
+          this.featureImportanceChart.destroy();
+        }
+
+        // Check if feature importance data exists
+        if (
+          !data ||
+          !data.feature_importance ||
+          !Array.isArray(data.feature_importance)
+        ) {
+          console.warn("No feature importance data available");
+          return;
+        }
+
+        // Sort features by importance
+        // Sort features by importance and take up to 10 features
+        const sortedFeatures = [...data.feature_importance]
+          .sort((a, b) => b.importance - a.importance)
+          .slice(0, Math.min(10, data.feature_importance.length)); // Ensure we don't exceed array length
+
+        // Validate that we have features to display
+        if (sortedFeatures.length === 0) {
+          console.warn("No feature importance data to display");
+          return;
+        }
+
+        this.featureImportanceChart = new Chart(ctx, {
+          type: "bar",
+          data: {
+            labels: sortedFeatures.map((f) => f.feature),
+            datasets: [
+              {
+                data: sortedFeatures.map((f) => f.importance),
+                backgroundColor: "rgba(59, 130, 246, 0.7)",
+                borderColor: "rgb(59, 130, 246)",
+                borderWidth: 1,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            indexAxis: "y",
+            plugins: {
+              legend: {
+                display: false,
+              },
+              tooltip: {
+                callbacks: {
+                  label: function (context) {
+                    return `Importance: ${context.raw.toFixed(4)}`;
+                  },
+                },
+              },
+            },
+            scales: {
+              x: {
+                beginAtZero: true,
+                title: {
+                  display: true,
+                  text: "Importance Score",
+                },
+              },
+            },
+          },
+        });
+      },
+
+      destroyCharts() {
+        if (this.confusionMatrixChart) {
+          this.confusionMatrixChart.destroy();
+          this.confusionMatrixChart = null;
+        }
+        if (this.featureImportanceChart) {
+          this.featureImportanceChart.destroy();
+          this.featureImportanceChart = null;
+        }
+      },
+    };
+
+    // Toast Notifications
+    const Toast = {
+      show(message, type = "info") {
+        const toast = document.createElement("div");
+        toast.className = `toast toast-end`;
+
+        const alertClass =
+          type === "error"
+            ? "alert bg-red-50 text-red-700 border border-red-100"
+            : "alert bg-green-50 text-green-700 border border-green-100";
+
+        toast.innerHTML = `
+          <div class="${alertClass}">
+            <span>${message}</span>
+          </div>
+        `;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+      },
+    };
+
+    // Training Progress Management
+    const TrainingProgress = {
+      updateProgress(progress) {
+        UI.progressBar.style.width = `${progress}%`;
+        UI.progressBar.setAttribute("aria-valuenow", progress);
+        UI.progressBar.querySelector(
+          ".progress-text"
+        ).textContent = `${progress}%`;
+      },
+
+      appendLog(message) {
+        UI.logsElement.textContent += message + "\n";
+        UI.logsElement.scrollTop = UI.logsElement.scrollHeight;
+      },
+
+      updateLogs(logs) {
+        if (logs && logs.length > 0) {
+          UI.logsElement.textContent = logs.join("\n");
+          UI.logsElement.scrollTop = UI.logsElement.scrollHeight;
+        }
+      },
+
+      reset() {
+        this.updateProgress(0);
+        UI.logsElement.textContent = "";
+        UI.resultsSection.classList.add("hidden");
+        UI.startTrainingBtn.disabled = true;
+        UI.statusText.textContent = "Starting training...";
+      },
+    };
+
+    // Results Display
+    const ResultsDisplay = {
+      async displayResults(data) {
+        console.log("Received data in displayResults:", data);
+
+        // Show the results section
+        document.getElementById("resultsSection").classList.remove("hidden");
+
+        // Handle warnings if present
+        const warningAlert = document.getElementById("warningAlert");
+        const warningMessage = document.getElementById("warningMessage");
+        if (data.warning) {
+          warningAlert.classList.remove("hidden");
+          warningMessage.textContent = data.warning.message;
+        } else {
+          warningAlert.classList.add("hidden");
+        }
+
+        // Hide the initial action buttons and show the post-training buttons
+        document.getElementById("actionButtons").classList.add("hidden");
+        document.getElementById("showSaveModelBtn").classList.remove("hidden");
+
+        // Update performance metrics
+        const resultsTable = document.getElementById("resultsTable");
+        resultsTable.innerHTML = ""; // Clear existing rows
+
+        // Define metrics based on what's available in the data
+        let metrics = [];
+        const isClassification = data?.train_accuracy !== undefined;
+
+        if (isClassification) {
+          // Classification metrics
+          metrics = [
+            {
+              name: "Training Accuracy",
+              value: data.train_accuracy || 0,
+              format: "percent",
+            },
+            {
+              name: "Test Accuracy",
+              value: data.test_accuracy || 0,
+              format: "percent",
+            },
+            {
+              name: "Precision",
+              value: data.precision || 0,
+              format: "percent",
+            },
+            { name: "Recall", value: data.recall || 0, format: "percent" },
+            {
+              name: "Cross-Val Accuracy (mean)",
+              value: data.cv_scores?.mean || 0,
+              format: "percent",
+            },
+            {
+              name: "Cross-Val Std",
+              value: data.cv_scores?.std || 0,
+              format: "decimal",
+            },
+          ];
+        } else {
+          // Regression metrics
+          metrics = [
+            {
+              name: "Training MSE",
+              value: data.train_mse || 0,
+              format: "decimal",
+            },
+            {
+              name: "Training RMSE",
+              value: data.train_rmse || 0,
+              format: "decimal",
+            },
+            {
+              name: "Training R²",
+              value: data.train_r2 || 0,
+              format: "decimal",
+            },
+            { name: "Test MSE", value: data.mse || 0, format: "decimal" },
+            { name: "Test RMSE", value: data.rmse || 0, format: "decimal" },
+            { name: "Test R²", value: data.r2 || 0, format: "decimal" },
+            {
+              name: "Cross-Val R² (mean)",
+              value: data.cv_scores?.mean || 0,
+              format: "decimal",
+            },
+            {
+              name: "Cross-Val Std",
+              value: data.cv_scores?.std || 0,
+              format: "decimal",
+            },
+          ];
+        }
+
+        // Add rows for each metric
+        metrics.forEach((metric) => {
+          const row = resultsTable.insertRow();
+          const nameCell = row.insertCell(0);
+          const valueCell = row.insertCell(1);
+
+          nameCell.className = "font-medium w-1/2";
+          valueCell.className = "text-right";
+
+          nameCell.textContent = metric.name;
+          if (metric.format === "percent") {
+            valueCell.textContent = `${(metric.value * 100).toFixed(2)}%`;
+          } else {
+            valueCell.textContent = metric.value.toFixed(4);
+          }
+        });
+
+        // Show/hide confusion matrix based on model type
+        const confusionMatrixCard = document.getElementById(
+          "confusionMatrixCard"
+        );
+        if (confusionMatrixCard) {
+          if (isClassification && data?.confusion_matrix) {
+            confusionMatrixCard.style.display = "";
+            const confusionMatrix = document.getElementById("confusionMatrix");
+            confusionMatrix.rows[1].cells[1].textContent =
+              data.confusion_matrix[0][0] || 0;
+            confusionMatrix.rows[1].cells[2].textContent =
+              data.confusion_matrix[0][1] || 0;
+            confusionMatrix.rows[2].cells[1].textContent =
+              data.confusion_matrix[1][0] || 0;
+            confusionMatrix.rows[2].cells[2].textContent =
+              data.confusion_matrix[1][1] || 0;
+          } else {
+            confusionMatrixCard.style.display = "none";
+          }
+        }
+
+        // Update feature importance if available
+        const featureImportanceCard = document.getElementById(
+          "featureImportanceCard"
+        );
+        if (featureImportanceCard) {
+          if (data?.feature_importance && data.feature_importance.length > 0) {
+            featureImportanceCard.style.display = "";
+            const featureTable = document
+              .getElementById("featureImportance")
+              .getElementsByTagName("tbody")[0];
+            featureTable.innerHTML = data.feature_importance
+              .sort((a, b) => b.importance - a.importance)
+              .map(
+                (imp) => `
+                <tr>
+                  <td>${imp.feature}</td>
+                  <td class="text-right font-medium">${imp.importance.toFixed(
+                    4
+                  )}</td>
+                </tr>
+              `
+              )
+              .join("");
+          } else {
+            featureImportanceCard.style.display = "none";
+          }
+        }
+      },
+
+      showMetrics(data) {
+        if (!data) {
+          console.warn("No metrics data available");
+          return;
+        }
+        this.displayResults(data);
+      },
+
+      copyResults() {
+        const resultsTable = document.getElementById("resultsTable");
+        if (!resultsTable) return;
+
+        let resultText = "Model Training Results\n";
+        resultText += "=====================\n\n";
+
+        // Add performance metrics
+        Array.from(resultsTable.rows).forEach((row) => {
+          resultText += `${row.cells[0].textContent}: ${row.cells[1].textContent}\n`;
+        });
+
+        // Add confusion matrix
+        const confusionMatrix = document.getElementById("confusionMatrix");
+        if (confusionMatrix) {
+          resultText += "\nConfusion Matrix\n";
+          resultText += "---------------\n";
+          resultText += "             Pred. Negative  Pred. Positive\n";
+          resultText += `Act. Negative    ${confusionMatrix.rows[1].cells[1].textContent}             ${confusionMatrix.rows[1].cells[2].textContent}\n`;
+          resultText += `Act. Positive    ${confusionMatrix.rows[2].cells[1].textContent}             ${confusionMatrix.rows[2].cells[2].textContent}\n`;
+        }
+
+        // Copy to clipboard
+        navigator.clipboard
+          .writeText(resultText)
+          .then(() => {
+            Toast.show("Results copied to clipboard!", "success");
+          })
+          .catch((err) => {
+            console.error("Failed to copy results:", err);
+            Toast.show("Failed to copy results", "error");
+          });
+      },
+
+      async saveAsImage() {
+        const resultsContent = document.getElementById("resultsContent");
+
+        try {
+          // Create canvas from the results content
+          const canvas = await html2canvas(resultsContent, {
+            backgroundColor: "#ffffff",
+            scale: 2, // Higher quality
+            logging: false,
+          });
+
+          // Convert canvas to blob
+          canvas.toBlob((blob) => {
+            // Create download link
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = "training_results.png";
+
+            // Trigger download
+            document.body.appendChild(link);
+            link.click();
+
+            // Cleanup
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+          });
+
+          Toast.show("Results saved as image!", "success");
+        } catch (error) {
+          console.error("Error saving image:", error);
+          Toast.show("Failed to save image", "error");
+        }
+      },
+
+      async getSuggestedName() {
+        try {
+          const response = await fetch("/get_suggested_name");
+          const data = await response.json();
+          if (data.success) {
+            document.getElementById("modelName").value = data.suggested_name;
+          }
+        } catch (error) {
+          console.error("Error getting suggested name:", error);
+        }
+      },
+    };
+
+    // API Calls
+    const API = {
+      async startTraining() {
+        const response = await fetch('{{ url_for("main.start_training") }}', {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+      },
+
+      async saveModel(modelName) {
+        const response = await fetch('{{ url_for("main.save_model") }}', {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: modelName }),
+        });
+        return response.json();
+      },
+
+      async pollStatus() {
+        const response = await fetch('{{ url_for("main.training_status") }}');
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+      },
+    };
+
+    // Training Controller
+    const TrainingController = {
+      async startTraining() {
+        if (pollingInterval) {
+          clearTimeout(pollingInterval);
+        }
+
+        TrainingProgress.reset();
+
+        try {
+          const data = await API.startTraining();
+          if (data.success) {
+            UI.statusText.textContent = "Training in progress...";
+            this.pollTrainingStatus();
+          } else {
+            throw new Error(data.error || "Failed to start training");
+          }
+        } catch (error) {
+          console.error("Error:", error);
+          UI.statusText.textContent = `Error: ${error.message}`;
+          UI.startTrainingBtn.disabled = false;
+          Toast.show("Failed to start training: " + error.message, "error");
+        }
+      },
+
+      async pollTrainingStatus() {
+        try {
+          const data = await API.pollStatus();
+          TrainingProgress.updateProgress(data.progress || 0);
+          TrainingProgress.updateLogs(data.logs);
+
+          if (data.status) {
+            UI.statusText.textContent = data.status;
+          }
+
+          // Update steps based on training status
+          const steps = document.getElementById("progressSteps");
+          if (steps) {
+            const uploadStep = steps.querySelector('[data-step="upload"]');
+            const configureStep = steps.querySelector(
+              '[data-step="configure"]'
+            );
+            const trainStep = steps.querySelector('[data-step="train"]');
+            const saveStep = steps.querySelector('[data-step="save"]');
+
+            // Upload and Configure steps are always marked as completed on train page
+            uploadStep?.classList.add("step-primary");
+            configureStep?.classList.add("step-primary");
+
+            // Train step is marked as primary when training starts
+            trainStep?.classList.add("step-primary");
+
+            // Save step is marked as primary only when training is completed with results
+            if (data.completed && data.results) {
+              saveStep?.classList.add("step-primary");
+            } else {
+              saveStep?.classList.remove("step-primary");
+            }
+          }
+
+          if (data.completed) {
+            this.handleTrainingComplete(data);
+          } else if (!data.error) {
+            pollingInterval = setTimeout(() => this.pollTrainingStatus(), 1000);
+          }
+        } catch (error) {
+          this.handleTrainingError(error);
+        }
+      },
+
+      handleTrainingComplete(data) {
+        clearTimeout(pollingInterval);
+        UI.startTrainingBtn.disabled = true;
+        UI.statusText.textContent =
+          "Training completed! Review results and save if satisfied.";
+
+        console.log("Training completed with full data:", data);
+
+        if (data.results) {
+          console.log("Results data found:", data.results);
+          // Display results
+          ResultsDisplay.displayResults(data.results);
+          Toast.show("Training completed successfully!", "success");
+          ResultsDisplay.getSuggestedName();
+
+          // Update all steps to show completion
+          const steps = document.getElementById("progressSteps");
+          if (steps) {
+            steps.querySelectorAll(".step").forEach((step) => {
+              step.classList.add("step-primary");
+            });
+          }
+        } else {
+          console.warn(
+            "No results data in training completion response:",
+            data
+          );
+          Toast.show("Training completed but no results available", "error");
+
+          // If no results, don't mark the save step as complete
+          const saveStep = document.querySelector('[data-step="save"]');
+          if (saveStep) {
+            saveStep.classList.remove("step-primary");
+          }
+        }
+      },
+
+      handleTrainingError(error) {
+        console.error("Error:", error);
+        clearTimeout(pollingInterval);
+        UI.statusText.textContent = "Error during training: " + error.message;
+        UI.startTrainingBtn.disabled = false;
+        Toast.show("Error during training: " + error.message, "error");
+      },
+    };
+
+    // Save Model Controller
+    const SaveModelController = {
+      async handleSave() {
+        const modelName = document.getElementById("modelName").value;
+
+        if (!modelName) {
+          Toast.show("Please enter a model name", "error");
+          return;
+        }
+
+        UI.saveModelBtn.disabled = true;
+        UI.saveModelBtn.innerHTML =
+          '<span class="loading loading-spinner"></span> Saving...';
+
+        try {
+          const data = await API.saveModel(modelName);
+          if (data.success) {
+            console.log("Model saved successfully at:", data.filepath);
+            UI.saveModelModal.close();
+            window.location.href = '{{ url_for("main.index") }}?success=true';
+          } else {
+            throw new Error(data.error || "Failed to save model");
+          }
+        } catch (error) {
+          console.error("Error:", error);
+          Toast.show("Error saving model: " + error.message, "error");
+        } finally {
+          UI.saveModelBtn.disabled = false;
+          UI.saveModelBtn.innerHTML = "Save Model";
+        }
+      },
+    };
+
+    // Event Listeners
+    function initializeEventListeners() {
+      UI.showLogs.addEventListener("change", () => {
+        UI.trainingLogs.classList.toggle("hidden", !UI.showLogs.checked);
+      });
+
+      UI.startTrainingBtn.addEventListener("click", () =>
+        TrainingController.startTraining()
+      );
+
+      UI.showSaveModelBtn.addEventListener("click", () =>
+        UI.saveModelModal.showModal()
+      );
+
+      UI.saveModelBtn.addEventListener("click", () =>
+        SaveModelController.handleSave()
+      );
+    }
+
+    // Initialize
+    initializeEventListeners();
+  });
+</script>
+{% endblock %}
