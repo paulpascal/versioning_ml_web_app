@@ -91,13 +91,15 @@ pipeline {
         
         failure {
             echo "Pipeline failed. Check the test results for details."
-            // Print failed test details
+            // Print failed test details without accessing failedTests directly
             script {
                 def testResults = currentBuild.rawBuild.getAction(hudson.tasks.junit.TestResultAction.class)
                 if (testResults != null && testResults.failCount > 0) {
-                    echo "Failed Tests:"
-                    testResults.failedTests.each { test ->
-                        echo "- ${test.fullName}: ${test.errorDetails}"
+                    echo "Failed Tests: ${testResults.failCount}"
+                    // Use a safer way to access failed tests
+                    def failed = testResults.getFailedTests()
+                    failed.each { test ->
+                        echo "- ${test.name}: ${test.errorDetails}"
                     }
                 }
             }
