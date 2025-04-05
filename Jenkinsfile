@@ -105,24 +105,6 @@ pipeline {
                 '''
             }
         }
-
-        stage('Git Push') {
-            steps {
-                sh '''
-                    . ${VENV_PATH}/bin/activate
-                    # Configure git credentials
-                    git config --global user.email "paul.alogno+jenkins@gmail.com"
-                    git config --global user.name "Paul@Jenkins"
-                    
-                    # Add and commit DVC metadata files
-                    git add *.dvc
-                    git commit -m "Jenkins: Update DVC metadata with new models and data" || true
-                    
-                    # Push changes to git
-                    git push https://${GIT_CREDENTIALS}@github.com/paulpascal/versioning_ml_web_app.git main
-                '''
-            }
-        }
     }
     
     post {
