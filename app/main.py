@@ -2,13 +2,12 @@ from flask import Flask
 import os
 from dotenv import load_dotenv
 from app.routes import main
+from scripts.dvc_setup import setup_dvc_gdrive
 
 resp = load_dotenv()
 
 
 def create_app():
-    print('os.getenv("MAX_CONTENT_LENGTH"', os.getenv("MAX_CONTENT_LENGTH"))
-
     """
     Create the Flask app
     """
@@ -25,7 +24,7 @@ def create_app():
     # Set upload folder path
     app.config["UPLOAD_FOLDER"] = os.path.join(
         os.path.dirname(os.path.dirname(__file__)),
-        os.getenv("UPLOAD_FOLDER", "data/raw"),
+        os.getenv("UPLOAD_FOLDER", "data"),
     )
 
     # Set models folder path
@@ -46,5 +45,8 @@ def create_app():
 
 
 if __name__ == "__main__":
+    # Setup DVC with Google Drive
+    setup_dvc_gdrive()
+
     app = create_app()
     app.run(debug=True)

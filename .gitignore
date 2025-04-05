@@ -32,12 +32,8 @@ env/
 *.swo
 
 # Project specific
-data/raw/*
-!data/raw/.gitkeep
-data/processed/*
-!data/processed/.gitkeep
+data/*
 models/*
-!models/.gitkeep
 
 # DVC
 .dvc/
@@ -55,3 +51,6 @@ logs/
 .env.*
 /data
 /models
+
+# Service account
+versionning-ml-web-app-875852ac5b56.json

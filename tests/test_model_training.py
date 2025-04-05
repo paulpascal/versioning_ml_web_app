@@ -14,6 +14,7 @@ The tests use the student_performance.csv dataset which contains:
 - Target: pass (binary classification)
 """
 
+from datetime import datetime
 import os
 import pytest
 import numpy as np
@@ -23,6 +24,12 @@ from app.utils.model_handler import ModelHandler
 
 # Get the directory where this test file is located
 TEST_DIR = os.path.dirname(os.path.abspath(__file__))
+
+
+def get_timestamped_name(base_name):
+    """Generate a timestamped name for files"""
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    return f"{base_name}_{timestamp}"
 
 
 @pytest.fixture
@@ -264,7 +271,16 @@ def test_model_saving(student_data, model_config):
     print(f"\nModel saved to: {filepath}")
     assert os.path.exists(filepath)
 
-    # Clean up
+    # Save training data with timestamp
+    data_name = get_timestamped_name("student_performance_data")
+    data_path = os.path.join("data", f"{data_name}.csv")
+    student_data["df"].to_csv(data_path, index=False)
+    print(f"Training data saved to: {data_path}")
+
+    # Clean up test files
     if os.path.exists(filepath):
         os.remove(filepath)
         print("Test model file cleaned up successfully")
+    if os.path.exists(data_path):
+        os.remove(data_path)
+        print("Test data file cleaned up successfully")
