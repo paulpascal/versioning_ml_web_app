@@ -32,6 +32,7 @@ pipeline {
         stage('DVC Setup') {
             steps {
                 sh '''
+                    . ${VENV_PATH}/bin/activate
                     # Write Google Drive credentials to a temporary file
                     echo "${GOOGLE_DRIVE_CREDENTIALS}" > google_credentials.json
                     
