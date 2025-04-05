@@ -76,33 +76,6 @@ dvc init
 dvc remote add -d myremote gdrive://[ID_DU_DOSSIER_GDRIVE]
 ```
 
-## 🔑 Configuration du Compte de Service Google
-
-1. **Créer un projet dans Google Cloud Console**
-
-   - Aller sur [Google Cloud Console](https://console.cloud.google.com)
-   - Créer un nouveau projet
-   - Activer l'API Google Drive
-
-2. **Créer un compte de service**
-
-   - Dans la console, aller dans "IAM & Admin" > "Service Accounts"
-   - Cliquer sur "Create Service Account"
-   - Donner un nom et une description
-   - Attribuer le rôle "Storage Object Viewer"
-
-3. **Générer la clé**
-
-   - Cliquer sur le compte de service créé
-   - Aller dans l'onglet "Keys"
-   - Cliquer sur "Add Key" > "Create new key"
-   - Choisir le format JSON
-   - Télécharger le fichier de credentials
-
-4. **Configurer l'accès au Drive**
-   - Partager le dossier Google Drive avec l'email du compte de service
-   - Copier l'ID du dossier Drive pour la configuration DVC
-
 ## 🚀 Utilisation
 
 1. **Démarrer l'application**
@@ -204,15 +177,3 @@ Les contributions sont les bienvenues ! Voici comment contribuer :
 - Visualisation des résultats
 - Versioning des données et modèles
 - Tests automatisés
-
-### Livrables
-
-1. Repository GitHub avec le code source
-2. Dépôt DVC avec les données et modèles versionnés
-3. Rapport PDF détaillant les étapes du projet
-
-## 📝 Notes
-
-- Assurez-vous d'avoir suffisamment d'espace disque pour les données et modèles
-- Les fichiers uploadés sont limités à 16MB par défaut
-- Les modèles sont automatiquement versionnés avec DVC après l'entraînement
