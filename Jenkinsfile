@@ -32,12 +32,20 @@ pipeline {
         stage('DVC Setup') {
             steps {
                 sh '''
-                    . ${VENV_PATH}/bin/activate
+                    # Write Google Drive credentials to a temporary file
+                    echo "${GOOGLE_DRIVE_CREDENTIALS}" > google_credentials.json
+                    
                     # Setup DVC with Google Drive
                     python scripts/dvc_setup.py
                     
+                    # Verify DVC remote configuration
+                    dvc remote list
+                    
                     # Pull latest data and models
                     dvc pull
+                    
+                    # Clean up credentials file
+                    rm google_credentials.json
                 '''
             }
         }
@@ -45,7 +53,6 @@ pipeline {
         stage('Source Code Tests') {
             steps {
                 sh '''
-                    . ${VENV_PATH}/bin/activate
                     # Run test data handler tests with detailed logging
                     PYTHONPATH=${WORKSPACE} pytest tests/test_data_handler.py \
                         --junitxml=data-handler-test-results.xml \
@@ -65,10 +72,9 @@ pipeline {
             }
         }
         
-        stage('End-to-End Model Training Test') {
+        stage('Model Training Test') {
             steps {
                 sh '''
-                    . ${VENV_PATH}/bin/activate
                     # Run end-to-end model training test
                     PYTHONPATH=${WORKSPACE} pytest tests/test_model_training.py \
                         --junitxml=model-training-test-results.xml \
@@ -84,7 +90,6 @@ pipeline {
         stage('Model Validation Test') {
             steps {
                 sh '''
-                    . ${VENV_PATH}/bin/activate
                     # Run validation tests on the newly trained model
                     PYTHONPATH=${WORKSPACE} pytest tests/test_model_validation.py \
                         --junitxml=model-validation-test-results.xml \
@@ -97,10 +102,18 @@ pipeline {
             }
         }
 
+        stage('DVC Push') {
+            steps {
+                sh '''
+                    # Push new models and data to DVC remote
+                    dvc push
+                '''
+            }
+        }
+
         stage('Git Push') {
             steps {
                 sh '''
-                    . ${VENV_PATH}/bin/activate
                     # Configure git credentials
                     git config --global user.email "paul.alogno+jenkins@gmail.com"
                     git config --global user.name "Paul@Jenkins"

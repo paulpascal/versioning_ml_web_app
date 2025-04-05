@@ -100,14 +100,16 @@ def setup_dvc_gdrive():
     # Step 2: Configure Google Drive
     log_step(2, "Google Drive Configuration", "in_progress")
     if not is_gdrive_configured():
-        # Get credentials path from environment
-        credentials_path = os.getenv("GOOGLE_DRIVE_CREDENTIALS")
-        if not credentials_path or not os.path.exists(credentials_path):
+        # Get credentials path from environment or use default
+        credentials_path = os.getenv(
+            "GOOGLE_DRIVE_CREDENTIALS", "google_credentials.json"
+        )
+        if not os.path.exists(credentials_path):
             log_step(
                 2, "Google Drive Configuration", "error", "Credentials file not found"
             )
             raise ValueError(
-                "Google Drive credentials file not found. Please set GOOGLE_DRIVE_CREDENTIALS in .env"
+                f"Google Drive credentials file not found at {credentials_path}. Please set GOOGLE_DRIVE_CREDENTIALS in .env or provide google_credentials.json"
             )
 
         # Initialize DVC with Google Drive
